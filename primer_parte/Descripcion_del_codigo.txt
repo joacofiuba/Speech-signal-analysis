@@ -1,0 +1,61 @@
+
+# --- 1. Cargar archivo de audio lento ---
+# Uso librosa.load para abrir el archivo .wav con una frecuencia de muestreo fija (100000 Hz).
+archivo_lento = r"C:\Users\Usuario\OneDrive\Escritorio\Señales y sistemas\TP1\Lapachos_lento.wav"
+x_lento, sr = librosa.load(archivo_lento, sr=100000)
+
+# --- 2. Definir manualmente los intervalos de tiempo ---
+# Marco los tiempos aproximados donde aparece la vocal [a] y la fricativa [s].
+t_a_inicio, t_a_fin = 0.72, 1.10  # segmento de la vocal [a]
+t_s_inicio, t_s_fin = 2.15, 2.49   # segmento de la fricativa [s]
+
+# --- 3. Convertir tiempos a índices de muestra ---
+# Multiplico los tiempos por la frecuencia de muestreo para obtener las posiciones en el vector.
+La parte 3, la conversión de tiempos a índices de muestra, se entiende mejor si lo pensás desde
+cómo funciona la digitalización de una señal.
+Cuando cargás el audio con librosa.load, le pedís que lo muestree a una frecuencia determinada (sr=100000).
+Ese valor significa que cada segundo de audio está representado por 100.000 muestras en tu vector x_lento.
+Entonces, si vos sabés que la vocal [a] empieza en el segundo 0.72 y termina en el segundo 1.10, lo que hacés 
+es multiplicar esos tiempos por la frecuencia de muestreo para obtener la posición exacta en el vector de muestra
+
+idx_a_inicio, idx_a_fin = int(t_a_inicio*sr), int(t_a_fin*sr)
+idx_s_inicio, idx_s_fin = int(t_s_inicio*sr), int(t_s_fin*sr)
+
+# --- 4. Extraer los segmentos de interés ---
+# Selecciono del vector de audio únicamente las muestras correspondientes a cada fonema.
+segmento_a = x_lento[idx_a_inicio:idx_a_fin]
+segmento_s = x_lento[idx_s_inicio:idx_s_fin]
+
+# --- 5. Graficar la vocal [a] ---
+# Uso waveshow para visualizar la forma de onda del segmento de la vocal.
+plt.figure(figsize=(12,4))
+librosa.display.waveshow(segmento_a, sr=sr)
+plt.title("Segmento vocal [a] (cuasi-periódico)")
+plt.xlabel("Tiempo (s)")
+plt.ylabel("Amplitud")
+plt.show()
+
+# --- 6. Graficar la fricativa [s] ---
+# Repito el procedimiento para la fricativa, que debería mostrar un patrón no periódico.
+plt.figure(figsize=(12,4))
+librosa.display.waveshow(segmento_s, sr=sr)
+plt.title("Segmento fricativo [s] (no periódico)")
+plt.xlabel("Tiempo (s)")
+plt.ylabel("Amplitud")
+plt.show()
+
+# --- 7. Estimar período y frecuencia fundamental de la vocal [a] ---
+# Aplico autocorrelación al segmento de la vocal para detectar periodicidad.
+autocorr = np.correlate(segmento_a, segmento_a, mode='full')
+autocorr = autocorr[len(autocorr)//2:]  # me quedo con la mitad positiva
+
+# --- 8. Buscar el primer máximo significativo ---
+# Ignoro el pico en lag=0 y tomo el siguiente máximo como estimación del período.
+lag = np.argmax(autocorr[1:]) + 1
+periodo_muestras = lag
+periodo_segundos = periodo_muestras / sr
+frecuencia_fundamental = 1 / periodo_segundos
+
+# --- 9. Mostrar resultados ---
+print(f"Periodo estimado [a]: {periodo_segundos:.6f} s")
+print(f"Frecuencia fundamental [a]: {frecuencia_fundamental:.2f} Hz")

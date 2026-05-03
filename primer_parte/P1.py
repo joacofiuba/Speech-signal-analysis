@@ -8,8 +8,8 @@ from matplotlib.patches import Patch
 
 # Cargar el archivo de audio
 
-archivo1 = "lapachos_lento.wav"  # Cambia esto por el camino a tu archivo
-x, srr = librosa.load(archivo1,sr=100000) #sr es tasa de muestreo
+archivo1 = "lapachos_lento.wav"  
+x, srr = librosa.load(archivo1,sr=100000) #sr es Sample Rate a ws = 100kHz fijo
 
 
 fig_señal, ax = plt.subplots(figsize=(14, 5))
@@ -20,7 +20,7 @@ ax.set_ylabel('Amplitud')
 ax.set_xlim(0.4,3.0)
 
 # Fondos por tipo fonético
-ax.axvspan(0.493, 0.827, color='blue',  alpha=0.15) # l  - transitorio
+ax.axvspan(0.493, 0.827, color='green',  alpha=0.15) # l  - transitorio
 ax.axvspan(0.827, 1.267, color='green', alpha=0.15) # a  - vocal
 ax.axvspan(1.464, 1.480, color='blue',  alpha=0.15) # p  - explosivo
 ax.axvspan(1.480, 1.906, color='green', alpha=0.15) # a  - vocal
@@ -29,8 +29,8 @@ ax.axvspan(2.152, 2.521, color='green', alpha=0.15) # o  - vocal
 ax.axvspan(2.521, 2.801, color='red',   alpha=0.15) # s  - fricativa
 
 # Líneas verticales
-ax.axvline(x=0.493, color='blue',  alpha=0.7) #arranca l
-ax.axvline(x=0.827, color='blue',  alpha=0.7) #termina l
+ax.axvline(x=0.493, color='green',  alpha=0.7) #arranca l
+ax.axvline(x=0.827, color='green',  alpha=0.7) #termina l
 ax.axvline(x=0.827, color='green', alpha=0.7) #arranca a
 ax.axvline(x=1.267, color='green', alpha=0.7) #termina a
 ax.axvline(x=1.464, color='blue',  alpha=0.7) #arranca p
@@ -47,8 +47,8 @@ ax.axvline(x=2.801, color='red',   alpha=0.7) #termina s
 # Leyenda
 leyenda = [
     Patch(facecolor='green', alpha=0.5, label='Vocal (cuasi-periódico)'),
-    Patch(facecolor='red',   alpha=0.5, label='Fricativa/Africada (no periódico)'),
-    Patch(facecolor='blue',  alpha=0.5, label='Transitorio (l, p)'),
+    Patch(facecolor='red',   alpha=0.5, label='Fricativa (no periódico)'),
+    Patch(facecolor='blue',  alpha=0.5, label='Explosivo (p, k, t)'),
 ]
 ax.legend(handles=leyenda, loc='upper right')
 

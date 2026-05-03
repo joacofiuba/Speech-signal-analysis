@@ -35,5 +35,5 @@ for label, ti, tf in vocales:
     plt.title(label)
     plt.xlabel('Frecuencia (Hz)')
     plt.ylabel('Módulo')
-    plt.xlim(0, 4000)
+    plt.xlim(0, 2500)
     plt.show()

@@ -6,17 +6,16 @@ import numpy as np
 from scipy.signal import find_peaks
 
 
-# Cargar el archivo de audio
-archivo = "lapachos_lento.wav"  
+archivo = "lapachos_rapido.wav"  
 x, sr = librosa.load(archivo, sr=100000)
 
 vocales = [
-    ("[a1] varios períodos", 1.00, 1.20),
-    ("[a1] un período",      1.079, 1.082),
-    ("[a2] varios períodos", 1.65, 1.70),
-    ("[a2] un período",      1.689, 1.693),
-    ("[o] varios períodos",  2.30, 2.35),
-    ("[o] un período",       2.324, 2.328),
+    ("[a1] varios períodos", 0.400, 0.450),
+    ("[a1] un período",      0.4095, 0.4135),
+    ("[a2] varios períodos", 0.750, 0.800),
+    ("[a2] un período",      0.776, 0.780),
+    ("[o] varios períodos",  1.100, 1.300),
+    ("[o] un período",       1.197, 1.202),
 ]
 
 for label, ti, tf in vocales:

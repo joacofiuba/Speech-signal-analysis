@@ -14,7 +14,7 @@ vocales = [
     ("[a1] un período",      0.4095, 0.4135),
     ("[a2] varios períodos", 0.750, 0.800),
     ("[a2] un período",      0.776, 0.780),
-    ("[o] varios períodos",  1.100, 1.300),
+    ("[o] varios períodos",  1.100, 1.150),
     ("[o] un período",       1.197, 1.202),
 ]
 

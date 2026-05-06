@@ -31,7 +31,7 @@ for label, ti, tf in vocales:
     freqs_pos = freqs[:len(freqs)//2] #me quedo con lo que esté por debajo de fs/2 (50kHz) porque por encima tengo aliasing (Nyquist)
  
     # Identificación de formantes
-    peaks, _ = find_peaks(X_mag, prominence=20)
+    peaks, _ = find_peaks(X_mag, prominence=100)
     print(f"\n{label} - Primeros formantes:")
     for p in peaks[:3]:
         print(f"  {freqs_pos[p]:.1f} Hz")

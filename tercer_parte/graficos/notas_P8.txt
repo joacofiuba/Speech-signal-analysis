@@ -1,0 +1,7 @@
+para lapachos_decimado.wav:
+w_ancho = 300
+hop = w_ancho//4
+
+para lapachos_rapido.wav:
+w_ancho = 450
+hop = w_ancho//8

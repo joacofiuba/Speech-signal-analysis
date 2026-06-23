@@ -12,7 +12,7 @@ x, _ = librosa.load(archivo, sr=fs)
 # --- 1. TFCT PARA PROCESAMIENTO (Banda Angosta) ---
 w_proc = 2048
 win_proc = get_window('hann', w_proc)
-SFT_proc = ShortTimeFFT(win=win_proc, hop=w_proc//4, fs=fs, fft_mode='onesided', mfft=w_proc, phase_shift=0)
+SFT_proc = ShortTimeFFT(win=win_proc, hop=w_proc//2, fs=fs, fft_mode='onesided', mfft=w_proc, phase_shift=0)
 
 # Análisis
 Sx = SFT_proc.stft(x)
@@ -25,23 +25,33 @@ Sx_mod[:, 1::2] = (Sx[:, :-1] + Sx[:, 1:]) / 2.0
 
 # Síntesis
 x_rec = SFT_proc.istft(Sx_mod)
-sf.write("lapachos_mitad_vel_tfct.wav", x_rec, fs)
+sf.write("P11_lapachos_TFCT_mitad.wav", x_rec, fs)
 
-# --- 2. TFCT PARA ESPECTROGRAMA (Banda Ancha - Parámetros originales) ---
-w_spec = 400
-win_spec = get_window('hann', w_spec)
-SFT_spec = ShortTimeFFT(win=win_spec, hop=w_spec//8, fs=fs, fft_mode='onesided', mfft=4096, phase_shift=0)
 
-# Cálculo exclusivo para la gráfica
-Sx_rec = SFT_spec.stft(x_rec)
-Sx_dB = 20 * np.log10(np.abs(Sx_rec) + 1e-10)
 
-# --- 3. CONFIGURACIÓN DE GRÁFICA ---
+# TFCT PARA ESPECTROGRAMA
+
+archivo = "P11_lapachos_TFCT_mitad.wav"
+
+w_ancho = 2500 #aprox 56ms de ventana
+w = get_window(('hann'), w_ancho)
+
+x, sr = librosa.load(archivo, sr=fs) 
+#hop = salto de el sliding de la ventana, w_ancho//4 (división entera) implica un solapamiento entre cada iteración de un 25% de la ventana 
+SFT = ShortTimeFFT(win=w, hop=w_ancho//8, fs=fs,fft_mode='onesided', mfft=16384, dual_win=None, scale_to=None, phase_shift=0)
+Sx = SFT.stft(x)
+
+# Calcular la magnitud del espectrograma en decibeles (añadiendo un offset para evitar log(0))
+Sx_dB = 20 * np.log10(np.abs(Sx) + 1e-10)
+
+# Configurar y generar la gráfica
 fig, ax = plt.subplots(figsize=(10, 6))
 
-im = ax.imshow(Sx_dB, origin='lower', aspect='auto', extent=SFT_spec.extent(len(x_rec)), vmax=30, vmin=-10, cmap='viridis')
-ax.set_ylim(0, 2500)
-ax.set_title('Espectrograma - Banda Ancha (Señal Ralentizada)')
+
+# SFT.extent(len(y)) retorna (t_min, t_max, f_min, f_max)
+im = ax.imshow(Sx_dB, origin='lower', aspect='auto', extent=SFT.extent(len(x)), vmax = 30, vmin = -30, cmap='viridis') # gráfico de la matriz
+ax.set_ylim(0, 7000)
+ax.set_title('Espectrograma - Banda Angosta - Lapachos rápida Interpolada')
 ax.set_xlabel('Tiempo [s]')
 ax.set_ylabel('Frecuencia [Hz]')
 fig.colorbar(im, ax=ax, label='Magnitud [dB]')

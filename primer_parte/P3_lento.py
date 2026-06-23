@@ -1,10 +1,7 @@
 import librosa
-import librosa.display
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 import numpy as np
-from scipy.signal import find_peaks
-
+from scipy.signal import freqz
 
 # Cargar el archivo de audio
 archivo = "lapachos_lento.wav"  
@@ -22,25 +19,61 @@ vocales = [
 for label, ti, tf in vocales:
     segmento = x[int(ti*sr):int(tf*sr)]
  
-    # calculo de FFT
-    X = np.fft.fft(segmento) # magnitudes complejas
-    freqs = np.fft.fftfreq(len(segmento), d=1/sr) # frecuencias asociadas a cada complejo
+    # Cálculo de FFT
+    X = np.fft.fft(segmento)
+    freqs_pos = np.fft.fftfreq(len(segmento), d=1/sr)[:len(segmento)//2]
+    X_mag = np.abs(X[:len(segmento)//2])
  
-    # Solo mitad positiva
-    X_mag = np.abs(X[:len(X)//2])  #tomo el modulo para poder graficar, solo tomo las frecuencias positivas
-    freqs_pos = freqs[:len(freqs)//2] #me quedo con lo que esté por debajo de fs/2 (50kHz) porque por encima tengo aliasing (Nyquist)
- 
-    # Identificación de formantes
-    peaks, _ = find_peaks(X_mag, prominence=100)
-    print(f"\n{label} - Primeros formantes:")
-    for p in peaks[:3]:
-        print(f"  {freqs_pos[p]:.1f} Hz")
- 
+    # --- Cálculo LPC Mejorado ---
+    
+    # 1. Submuestreo a 8 kHz
+    sr_lpc = 8000
+    segmento_lpc = librosa.resample(y=segmento, orig_sr=sr, target_sr=sr_lpc)
+    
+    # 2. Pre-énfasis: Aplana el espectro para que el LPC capture mejor F2 y F3
+    coef_preenfasis = 0.97
+    segmento_pre = librosa.effects.preemphasis(segmento_lpc, coef=coef_preenfasis)
+    
+    # 3. Enventanado
+    segmento_pre = segmento_pre * np.hamming(len(segmento_pre))
+    
+    # 4. Cálculo LPC (Orden 12 es el estándar óptimo para 8kHz)
+    orden_lpc = 12
+    a_lpc = librosa.lpc(segmento_pre, order=orden_lpc)
+    
+    # 5. Respuesta en frecuencia del filtro LPC
+    idx_max = np.searchsorted(freqs_pos, sr_lpc / 2)
+    freqs_eval = freqs_pos[:idx_max]
+    _, h_lpc = freqz(1, a_lpc, worN=freqs_eval, fs=sr_lpc)
+    
+    # 6. Des-énfasis visual: Restaura la pendiente espectral original
+    w_eval = 2 * np.pi * freqs_eval / sr_lpc
+    h_pre = 1 - coef_preenfasis * np.exp(-1j * w_eval)
+    
+    magnitud_h_pre = np.abs(h_pre)
+    
+    # Evitar el artefacto de división por casi cero en DC (0 Hz)
+    # Congelamos el valor del divisor por debajo de los 100 Hz
+    idx_100hz = np.searchsorted(freqs_eval, 100)
+    if idx_100hz > 0:
+        magnitud_h_pre[:idx_100hz] = magnitud_h_pre[idx_100hz]
+        
+    envolvente = np.abs(h_lpc) / magnitud_h_pre
+    # 7. Normalización restringida al rango de ploteo
+    idx_limite = np.searchsorted(freqs_eval, 2500)
+    if idx_limite > 0:
+        max_espectro = np.max(X_mag[:idx_limite])
+        max_envolvente = np.max(envolvente[:idx_limite])
+        if max_envolvente > 0:
+            envolvente = envolvente * (max_espectro / max_envolvente)
+
+    # Ploteo
     plt.figure()
-    plt.plot(freqs_pos, X_mag)
+    plt.plot(freqs_pos, X_mag, label='Espectro')
+    plt.plot(freqs_eval, envolvente, color='red', linewidth=2, label='Envolvente LPC')
     plt.title(label)
     plt.xlabel('Frecuencia (Hz)')
     plt.ylabel('Módulo')
     plt.xlim(0, 2500)
+    plt.legend()
     plt.show()
- 

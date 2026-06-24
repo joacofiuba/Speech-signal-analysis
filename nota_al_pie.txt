@@ -1,2 +1,0 @@
-repo con las capturas y codigos de la primer y segunda parte:
-https://github.com/joacofiuba/Speech-signal-analysis

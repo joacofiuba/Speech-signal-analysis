@@ -3,7 +3,7 @@ import librosa.display
 import matplotlib.pyplot as plt
 import numpy as np
 
-archivo_lento = "C:/Users/Marcos/OneDrive/Escritorio/Lapachos/Lapachos_rapido.wav"
+archivo_lento = "lapachos_rapido.wav" 
 x_lento, sr = librosa.load(archivo_lento, sr=100000)
 
 # Vector de fonemas: (etiqueta, t_inicio, t_fin)

@@ -1,13 +1,12 @@
 import librosa
-import librosa.display
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 import numpy as np
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, freqz
 
+archivo = "lapachos_rapido.wav"
 
-archivo = "lapachos_rapido.wav"  
-x, sr = librosa.load(archivo, sr=100000)
+sr = 16000
+x, sr = librosa.load(archivo, sr=sr)
 
 vocales = [
     ("[a1] varios períodos", 0.400, 0.450),
@@ -18,28 +17,41 @@ vocales = [
     ("[o] un período",       1.197, 1.202),
 ]
 
+# Orden LPC estándar para voz a 16 kHz es 18.
+orden_lpc = int(sr / 1000) + 2 
+
 for label, ti, tf in vocales:
     segmento = x[int(ti*sr):int(tf*sr)]
+    N = len(segmento)
  
-    # calculo de FFT
-    X = np.fft.fft(segmento) # magnitudes complejas
-    freqs = np.fft.fftfreq(len(segmento), d=1/sr) # frecuencias asociadas a cada complejo
+    # Optimización 2: Enventanado para reducir fugas espectrales (spectral leakage)
+    segmento = segmento * np.hanning(N)
  
-    # Solo mitad positiva
-    X_mag = np.abs(X[:len(X)//2])  #tomo el modulo para poder graficar, solo tomo las frecuencias positivas
-    freqs_pos = freqs[:len(freqs)//2] #me quedo con lo que esté por debajo de fs/2 (50kHz) porque por encima tengo aliasing (Nyquist)
+    #Computa solo frecuencias positivas, 
+    # reduciendo a la mitad la memoria y el tiempo de cálculo.
+    X = np.fft.rfft(segmento)
+    freqs_pos = np.fft.rfftfreq(N, d=1/sr)
+    X_mag = np.abs(X)
  
-    # Identificación de formantes
-    peaks, _ = find_peaks(X_mag, prominence=20)
-    print(f"\n{label} - Primeros formantes:")
-    for p in peaks[:3]:
-        print(f"  {freqs_pos[p]:.1f} Hz")
+    # Cálculo LPC
+    segmento_pre = librosa.effects.preemphasis(segmento)
+    a = librosa.lpc(segmento_pre, order=orden_lpc)
+    
+    # freqz con worN garantizando el mismo tamaño que el vector de rfft
+    _, h = freqz(1, a, worN=len(freqs_pos))
+    lpc_mag = np.abs(h)
+    
+    # Normalización del LPC para el gráfico
+    lpc_mag = lpc_mag * (np.max(X_mag) / np.max(lpc_mag))
  
+
+    # Gráfico
     plt.figure()
-    plt.plot(freqs_pos, X_mag)
+    plt.plot(freqs_pos, X_mag, label='Espectro FFT', alpha=0.5)
+    plt.plot(freqs_pos, lpc_mag, color='red', linewidth=2, label='Envolvente LPC')
     plt.title(label)
     plt.xlabel('Frecuencia (Hz)')
     plt.ylabel('Módulo')
-    plt.xlim(0, 2500)
+    plt.xlim(0, 2500) # Límite visual preservado
+    plt.legend()
     plt.show()
- 

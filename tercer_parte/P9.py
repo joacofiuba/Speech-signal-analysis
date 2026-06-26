@@ -2,6 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from scipy.signal import firwin, lfilter
+import matplotlib.pyplot as plt 
+import librosa
+from scipy.signal import ShortTimeFFT, get_window
+
 
 # 1. Carga de señales leyendo dinámicamente la frecuencia de muestreo
 fs_rapida, x_rapida = wavfile.read("lapachos_rapido.wav")
@@ -30,28 +34,46 @@ x_interp = lfilter(h, 1.0, x_up)
 
 # Guardar la señal resultante.
 # Al guardarla con la fs_rapida original, la reproducción ocurre a la mitad de la velocidad.
-wavfile.write("lapachos_rapido_interpolado.wav", fs_rapida, x_interp.astype(np.int16))
+wavfile.write("P9_lapachos_rapido_interpolado.wav", fs_rapida, x_interp.astype(np.int16))
+
+# ESPECTROGRAMA
+
+archivo = "P9_lapachos_rapido_interpolado.wav"
+fs = 44100 # (estandar) 
 
 
-# --- CÁLCULO Y GRAFICACIÓN DE FFT COMPARATIVA ---
-def mostrar_fft_ax(signal_audio, fs, ax, titulo, color):
-    N = len(signal_audio)
-    freqs = np.fft.rfftfreq(N, d=1/fs)
-    fft_vals = np.abs(np.fft.rfft(signal_audio)) / N
-    
-    ax.plot(freqs, fft_vals, color=color)
-    ax.set_ylabel('Magnitud')
-    ax.set_xlim(0, 2000)
-    ax.set_title(titulo)
-    ax.grid(True, alpha=0.3)
+# ancho de la ventana -> determina si la STFT es de banda angosta o ancha.
+# banda angosta: permite tener mayor resolución espectral
+# banda ancha: permite tener mayor resolución temporal.
 
-# Se generan 2 subgráficos: la referencia (lenta) y el resultado interpolado
-fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
 
-mostrar_fft_ax(x_lenta, fs_lenta, axes[0], 'FFT - Lapachos Lenta (Referencia)', 'black')
-mostrar_fft_ax(x_interp, fs_rapida, axes[1], 'FFT - Lapachos Rápida Interpolada Clásica', 'red')
+# 1/sr = duración de cada n de la secuencia x[n]. 
+# w_ancho = cantidad de n => n * 1/sr = ancho temporal de la ventana
+w_ancho = 600
+w = get_window('hann', w_ancho)
 
-axes[1].set_xlabel('Frecuencia [Hz]')
+
+x, sr = librosa.load(archivo, sr=fs) 
+
+#hop = salto de el sliding de la ventana, w_ancho//4 (división entera) implica un solapamiento entre cada iteración de un 25% de la ventana 
+#mmft = zero-padding. agregado para poder hacer zoom sin pixelearse.
+SFT = ShortTimeFFT(win=w, hop=w_ancho//8, fs=fs,fft_mode='onesided', mfft=4096, dual_win=None, scale_to=None, phase_shift=0)
+Sx = SFT.stft(x)
+
+# Calcular la magnitud del espectrograma en decibeles (añadiendo un offset para evitar log(0))
+Sx_dB = 20 * np.log10(np.abs(Sx) + 1e-10)
+
+# Configurar y generar la gráfica
+fig, ax = plt.subplots(figsize=(10, 6))
+
+
+# SFT.extent(len(y)) retorna (t_min, t_max, f_min, f_max)
+im = ax.imshow(Sx_dB, origin='lower', aspect='auto', extent=SFT.extent(len(x)), vmax = 30, vmin = -10, cmap='viridis') # gráfico de la matriz
+ax.set_ylim(0, 2000)
+ax.set_title('Espectrograma - Banda Ancha')
+ax.set_xlabel('Tiempo [s]')
+ax.set_ylabel('Frecuencia [Hz]')
+fig.colorbar(im, ax=ax, label='Magnitud [dB]')
 
 plt.tight_layout()
 plt.show()

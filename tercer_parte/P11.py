@@ -12,7 +12,7 @@ x, _ = librosa.load(archivo, sr=fs)
 # --- 1. TFCT PARA PROCESAMIENTO (Banda Angosta) ---
 w_proc = 2048
 win_proc = get_window('hann', w_proc)
-SFT_proc = ShortTimeFFT(win=win_proc, hop=w_proc//2, fs=fs, fft_mode='onesided', mfft=w_proc, phase_shift=0)
+SFT_proc = ShortTimeFFT(win=win_proc, hop=w_proc//4, fs=fs, fft_mode='onesided', mfft=4096, phase_shift=0)
 
 # Análisis
 Sx = SFT_proc.stft(x)
